@@ -2,7 +2,6 @@ import os
 import httplib
 import threading
 import re
-
 import logging
 
 
@@ -47,6 +46,3 @@ class Web(threading.Thread):
         conn.request('GET', self.uri)
         self.urlobj = conn.getresponse()
         self.notify()
-
-    def close(self):
-        pass

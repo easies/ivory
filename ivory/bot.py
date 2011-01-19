@@ -106,9 +106,7 @@ class Bot(object):
                 return self.say('%s: %s' % (nick, msg))
 
             def say(self, msg):
-                if not self.is_channel:
-                    return self.bot.command.msg(self.sender, msg)
-                return self.bot.command.notice(self.sender, msg)
+                return self.bot.command.msg(self.sender, msg)
 
             def __getattr__(self, name):
                 if name == 'reply':

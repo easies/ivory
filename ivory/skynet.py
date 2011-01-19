@@ -1,5 +1,6 @@
 import select
 import logging
+import functools
 from web import Web
 
 
@@ -17,7 +18,9 @@ class SkyNet(object):
         self.add(bot, 'BOT', bot.handle)
 
     def add_web(self, url, callback):
-        new_callback = lambda obj: callback(obj.get())
+        @functools.wraps(callback)
+        def new_callback(obj):
+            return callback(obj.get())
         # A Web is a Thread.
         w = Web(url)
         w.start()
