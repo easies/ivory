@@ -10,7 +10,8 @@ import mod_importer
 class Config(object):
 
     def __init__(self, path):
-        self._path = os.path.abspath(os.path.normpath(path))
+        x = os.path.expanduser(path)
+        self._path = os.path.abspath(os.path.normpath(x))
         self._path = self._path.rstrip('.py')
         self._mod = None
         self._config = {}

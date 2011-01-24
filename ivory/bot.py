@@ -7,6 +7,7 @@ import imp
 import traceback
 #
 from .web import Web
+from .conf import Config
 import irc
 import mod_importer
 
@@ -15,7 +16,8 @@ class Bot(object):
 
     def __init__(self, name='Bot Bot Bot', nick='ivory',
                  network='localhost', port=6667, skynet=None,
-                 modules_dir=os.path.normpath('./modules')):
+                 modules_dir=os.path.normpath('./modules'),
+                 config_path='~/.ivory/default.py'):
         self.name = name
         self.nick = nick
         self.network = network
@@ -28,6 +30,9 @@ class Bot(object):
         self.buffer_w = w
         self.skynet = skynet
         self.channels = []
+        # Config
+        self.config_path = os.path.abspath(os.path.expanduser(config_path))
+        self.config = None
         # Load the modules
         self.modules_dir = os.path.abspath(modules_dir)
         self.modules = None
@@ -42,6 +47,11 @@ class Bot(object):
 
     def reload(self):
         try:
+            self.config = Config(self.config_path)
+        except Exception, e:
+            logging.error('Error reloading config: path=%s', self.config_path)
+            logging.error(traceback.format_exc())
+        try:
             m = mod_importer.load_module(self.modules_dir)
             self.modules = mod_importer.get_modules(m)
             self.actions = mod_importer.process_modules(self.modules)
@@ -49,7 +59,7 @@ class Bot(object):
             for a in self.actions:
                 logging.info('> %r', a)
         except Exception, e:
-            logging.error('path=%s', self.modules_dir)
+            logging.error('Error reloading mods: path=%s', self.modules_dir)
             logging.error(traceback.format_exc())
 
     def fileno(self):

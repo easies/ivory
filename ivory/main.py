@@ -1,14 +1,14 @@
-import logging
-from skynet import SkyNet
-from bot import Bot
+import os
 import sys
+import logging
 import gflags
+from .skynet import SkyNet
+from .bot import Bot
+from .conf import Config
 
-gflags.DEFINE_string('nick', 'ivory', 'The bot\'s nickname.')
-gflags.DEFINE_string('name', 'Bot Bot Bot', 'The bot\'s name.')
-gflags.DEFINE_string('host', None, 'The host to connect to.')
-gflags.DEFINE_integer('port', 6667, 'The port.')
-gflags.DEFINE_string('moddir', './modules', 'The module directory.')
+gflags.DEFINE_string('conf', '~/.ivory/default.py', 'The config module.')
+gflags.DEFINE_boolean('init', False, '''Initialize ivory by creating a
+    default config file.''')
 FLAGS = gflags.FLAGS
 
 LOGFORMAT = '%(asctime)s %(filename)s %(lineno)s %(levelname)s %(message)s'
@@ -17,11 +17,15 @@ logging.basicConfig(level=logging.DEBUG, format=LOGFORMAT)
 
 def main():
     FLAGS(sys.argv)
-    if not FLAGS.host:
-        sys.stderr.write('Please specify a host.')
+    if FLAGS.init:
+        import gendefault
+        mdir = os.path.join(os.path.dirname(gendefault.__file__), 'modules')
+        gendefault.main(FLAGS.conf, mdir)
+        return
+    config = Config(FLAGS.conf)
     skynet = SkyNet()
-    b = Bot(skynet=skynet, name=FLAGS.name, nick=FLAGS.nick,
-        network=FLAGS.host, port=FLAGS.port, modules_dir=FLAGS.moddir)
+    b = Bot(skynet=skynet, name=config.name, nick=config.nick,
+        network=config.host, port=config.port, modules_dir=config.modules)
     skynet.add_bot(b)
     b.connect()
     b.run()
