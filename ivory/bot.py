@@ -80,7 +80,12 @@ class Bot(object):
         self.sock.close()
 
     def run(self):
-        pass
+        try:
+            for chan in self.config.channels:
+                self.join(chan)
+        except Exception, e:
+            logging.error('Error joining channels.')
+            logging.error(traceback.format_exc())
 
     def handle(self, event):
         os.write(self.buffer_w, self.sock.recv(4096))
