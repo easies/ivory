@@ -1,6 +1,7 @@
 import select
 import logging
 import functools
+import traceback
 from web import Web
 
 
@@ -58,7 +59,7 @@ class SkyNet(object):
                     callback(obj)
                     logging.debug('%s called' % callback.__name__)
                 except Exception, e:
-                    logging.error(str(e))
+                    logging.error(traceback.format_exc())
                 if typ == 2:
                     logging.debug('unregistering web.')
                     self.remove(obj.fileno())

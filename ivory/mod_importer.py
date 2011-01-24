@@ -1,8 +1,6 @@
 import os
 import sys
-import re
-
-from action import Action
+from .action import Action
 
 def get_modules(module):
     mods = []
@@ -22,6 +20,5 @@ def process_modules(mods):
         for name in dir(m):
             func = getattr(m, name)
             if hasattr(func, 'rule'):
-                func.rule_comp = re.compile(getattr(func, 'rule'))
-                actions.append(Action(func.rule_comp, func))
+                actions.append(Action(func.rule, func))
     return actions

@@ -3,9 +3,11 @@ import sys
 import socket
 import logging
 import urllib
-
+import imp
+import traceback
+#
+from .web import Web
 import irc
-from web import Web
 import mod_importer
 
 
@@ -24,13 +26,10 @@ class Bot(object):
         self.buffer_r_last = ''
         self.buffer_r = r
         self.buffer_w = w
-
         self.skynet = skynet
         self.channels = []
-
         # Load the modules
-        sys.path.insert(0, os.path.dirname(modules_dir))
-        self.modules_dir = modules_dir
+        self.modules_dir = os.path.abspath(modules_dir)
         self.modules = None
         self.actions = None
         self.reload()
@@ -42,10 +41,23 @@ class Bot(object):
             return getattr(self.skynet, name)
 
     def reload(self):
-        # XXX Not safe?
-        modules = __import__(os.path.basename(self.modules_dir))
-        self.modules = mod_importer.get_modules(modules)
-        self.actions = mod_importer.process_modules(self.modules)
+        name = os.path.basename(self.modules_dir)
+        path = os.path.dirname(self.modules_dir)
+        fp = None
+        try:
+            fp, path, desc = imp.find_module(name, [path])
+            m = imp.load_module(name, fp, path, desc)
+            self.modules = mod_importer.get_modules(m)
+            self.actions = mod_importer.process_modules(self.modules)
+            logging.info('Loaded actions:')
+            for a in self.actions:
+                logging.info('> %r', a)
+        except Exception, e:
+            logging.info('name=%s path=%s', name, path)
+            logging.error(traceback.format_exc())
+        finally:
+            if fp:
+                fp.close()
 
     def fileno(self):
         return self.sock.fileno()
