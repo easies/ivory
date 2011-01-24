@@ -1,5 +1,8 @@
 import os
 import sys
+import imp
+import logging
+import traceback
 from .action import Action
 
 def get_modules(module):
@@ -22,3 +25,15 @@ def process_modules(mods):
             if hasattr(func, 'rule'):
                 actions.append(Action(func.rule, func))
     return actions
+
+
+def load_module(path):
+    name = os.path.basename(path)
+    directory = os.path.dirname(path)
+    fp = None
+    try:
+        fp, path, desc = imp.find_module(name, [directory])
+        return imp.load_module(name, fp, path, desc)
+    finally:
+        if fp:
+            fp.close()

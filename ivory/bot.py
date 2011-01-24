@@ -41,23 +41,16 @@ class Bot(object):
             return getattr(self.skynet, name)
 
     def reload(self):
-        name = os.path.basename(self.modules_dir)
-        path = os.path.dirname(self.modules_dir)
-        fp = None
         try:
-            fp, path, desc = imp.find_module(name, [path])
-            m = imp.load_module(name, fp, path, desc)
+            m = mod_importer.load_module(self.modules_dir)
             self.modules = mod_importer.get_modules(m)
             self.actions = mod_importer.process_modules(self.modules)
             logging.info('Loaded actions:')
             for a in self.actions:
                 logging.info('> %r', a)
         except Exception, e:
-            logging.info('name=%s path=%s', name, path)
+            logging.error('path=%s', self.modules_dir)
             logging.error(traceback.format_exc())
-        finally:
-            if fp:
-                fp.close()
 
     def fileno(self):
         return self.sock.fileno()
