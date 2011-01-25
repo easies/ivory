@@ -8,6 +8,7 @@ import traceback
 #
 from .web import Web
 from .conf import Config
+from .action import Action
 import irc
 import mod_importer
 
@@ -56,6 +57,7 @@ class Bot(object):
         try:
             self.modules = mod_importer.get_modules(self.modules_dir)
             self.actions = mod_importer.process_modules(self.modules)
+            self.add_builtins()
             logging.info('Loaded actions:')
             for a in self.actions:
                 logging.info('> %r', a)
@@ -65,6 +67,9 @@ class Bot(object):
             errors = True
         if not errors and not _init:
             self.run()
+
+    def add_builtins(self):
+        self.actions.insert(0, Action.from_func(BuiltinActions._reload))
 
     def fileno(self):
         return self.sock.fileno()
@@ -166,3 +171,15 @@ class Bot(object):
                 for action in self.actions:
                     if action(wrapped, other):
                         break
+
+
+class BuiltinActions(object):
+
+    def _reload(bot, input):
+        if not bot.from_admin():
+            bot.reply('Not authorized.')
+            return
+        bot.reload()
+        bot.reply('done.')
+    _reload.rule = r'^.reload'
+    _reload = staticmethod(_reload)

@@ -16,12 +16,3 @@ def part(bot, input):
         bot.reply('Not authorized.')
     bot.command.part([])
 part.rule = r'^.part (#\S+)'
-
-
-def _reload(bot, input):
-    if not bot.from_admin():
-        bot.reply('Not authorized.')
-        return
-    bot.reload()
-    bot.reply('done.')
-_reload.rule = r'^.reload'

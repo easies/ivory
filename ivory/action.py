@@ -4,6 +4,10 @@ import re
 
 class Action(object):
 
+    @classmethod
+    def from_func(cls, func):
+        return cls(func.rule, func)
+
     def __init__(self, rule, func):
         self.rule = re.compile(rule)
         self.rule_orig = rule

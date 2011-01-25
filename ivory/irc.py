@@ -37,14 +37,23 @@ class Command(object):
             return
         self.send_command('PART', ','.join(channels), ':%s' % message)
 
-    def channel_mode(self, modeline, limit=None, user=None, banmask=None):
-        pass
-        # XXX TODO
+    def mode(self, *args):
+        self.send_command('MODE', *args)
 
-    def user_mode(self, nick, mode):
-        pass
-        # XXX TODO
+    def topic(self, channel, newtopic=None):
+        args = [channel]
+        if newtopic:
+            args.append(newtopic)
+        self.send_command('TOPIC', *args)
 
+#    def channel_mode(self, modeline, limit=None, user=None, banmask=None):
+#        pass
+#        # XXX TODO
+#
+#    def user_mode(self, nick, mode):
+#        pass
+#        # XXX TODO
+#
     def names(self, channels):
         if not channels:
             return
