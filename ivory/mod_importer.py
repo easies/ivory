@@ -5,14 +5,19 @@ import logging
 import traceback
 from .action import Action
 
-def get_modules(module):
+
+def get_modules(dirpath):
     mods = []
-    for root, _, files, in os.walk(os.path.dirname(module.__file__)):
+    for root, _, files, in os.walk(dirpath):
         for f in files:
             if f.endswith('.py') and not f.startswith('_'):
-                name = f.split('.', 2)[0]
-                __import__('%s.%s' % (module.__name__, name))
-                mods.append(getattr(module, name))
+                try:
+                    name = f.rsplit('.', 2)[0]
+                    fullpath = os.path.join(root, f)
+                    m = imp.load_source(name, fullpath)
+                    mods.append(m)
+                except Exception, e:
+                    logging.error(traceback.format_exc())
         break
     return mods
 
@@ -25,15 +30,3 @@ def process_modules(mods):
             if hasattr(func, 'rule'):
                 actions.append(Action(func.rule, func))
     return actions
-
-
-def load_module(path):
-    name = os.path.basename(path)
-    directory = os.path.dirname(path)
-    fp = None
-    try:
-        fp, path, desc = imp.find_module(name, [directory])
-        return imp.load_module(name, fp, path, desc)
-    finally:
-        if fp:
-            fp.close()

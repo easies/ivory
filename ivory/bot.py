@@ -37,7 +37,7 @@ class Bot(object):
         self.modules_dir = os.path.abspath(modules_dir)
         self.modules = None
         self.actions = None
-        self.reload()
+        self.reload(True)
 
     def __getattr__(self, name):
         try:
@@ -45,15 +45,16 @@ class Bot(object):
         except:
             return getattr(self.skynet, name)
 
-    def reload(self):
+    def reload(self, _init=False):
+        errors = False
         try:
             self.config = Config(self.config_path)
         except Exception, e:
             logging.error('Error reloading config: path=%s', self.config_path)
             logging.error(traceback.format_exc())
+            errors = True
         try:
-            m = mod_importer.load_module(self.modules_dir)
-            self.modules = mod_importer.get_modules(m)
+            self.modules = mod_importer.get_modules(self.modules_dir)
             self.actions = mod_importer.process_modules(self.modules)
             logging.info('Loaded actions:')
             for a in self.actions:
@@ -61,6 +62,9 @@ class Bot(object):
         except Exception, e:
             logging.error('Error reloading mods: path=%s', self.modules_dir)
             logging.error(traceback.format_exc())
+            errors = True
+        if not errors and not _init:
+            self.run()
 
     def fileno(self):
         return self.sock.fileno()
@@ -80,9 +84,11 @@ class Bot(object):
         self.sock.close()
 
     def run(self):
+        """The init function for this bot."""
         try:
             for chan in self.config.channels:
-                self.join(chan)
+                if chan not in self.channels:
+                    self.join(chan)
         except Exception, e:
             logging.error('Error joining channels.')
             logging.error(traceback.format_exc())
@@ -117,16 +123,25 @@ class Bot(object):
             def __init__(self):
                 self.bot = realself
                 self.sender = nick
-                self.is_channel = False
+                self.reply_to = nick
+                self.in_channel = False
+                self.channel = None
                 if info[2].startswith('#'):
-                    self.sender = info[2]
-                    self.is_channel = True
+                    self.reply_to = info[2]
+                    self.channel = info[2]
+                    self.in_channel = True
+
+            def from_owner(self):
+                return nick == self.config.owner
+
+            def from_admin(self):
+                return self.from_owner() or nick in self.config.admins
 
             def reply(self, msg):
                 return self.say('%s: %s' % (nick, msg))
 
             def say(self, msg):
-                return self.bot.command.msg(self.sender, msg)
+                return self.bot.command.msg(self.reply_to, msg)
 
             def __getattr__(self, name):
                 if name == 'reply':

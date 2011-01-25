@@ -13,7 +13,7 @@ def shorten(bot, input):
             bot.say(tiny_url)
     bot.add_web(TINYURL_URI % orig_url, short_callback)
     logging.debug('shorten')
-shorten.rule = r'(https?://\S+)'
+shorten.rule = r'.*(https?://\S+).*'
 
 
 def fetch(bot, input):
