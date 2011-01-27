@@ -25,7 +25,8 @@ def main():
     config = Config(FLAGS.conf)
     skynet = SkyNet()
     b = Bot(skynet=skynet, name=config.name, nick=config.nick,
-        network=config.host, port=config.port, modules_dir=config.modules)
+        network=config.host, port=config.port, modules_dir=config.modules,
+        config_path=FLAGS.conf)
     skynet.add_bot(b)
     b.connect()
     b.run()
