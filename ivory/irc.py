@@ -2,11 +2,11 @@
 
 class Command(object):
 
-    def __init__(self, sock):
+    def __init__(self, sock, bot):
         self.sock = sock
+        self.bot = bot
 
     def send_command(self, command, *args):
-        #print '%s %s' % (command, ' '.join(args))
         self.sock.send('%s %s\r\n' % (command, ' '.join(args)))
 
     def password(self, passwd):
@@ -40,11 +40,14 @@ class Command(object):
     def mode(self, *args):
         self.send_command('MODE', *args)
 
-    def topic(self, channel, newtopic=None):
-        args = [channel]
+    def topic(self, channel, newtopic=None, receiver=None):
         if newtopic:
-            args.append(newtopic)
-        self.send_command('TOPIC', *args)
+            self.send_command('TOPIC', channel, ':%s' % newtopic)
+        else:
+            if not receiver:
+                return
+            self.bot.add_callback('TOPIC', receiver)
+            self.send_command('TOPIC', channel)
 
 #    def channel_mode(self, modeline, limit=None, user=None, banmask=None):
 #        pass

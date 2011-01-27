@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import socket
 import logging
@@ -24,13 +25,14 @@ class Bot(object):
         self.network = network
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.command = irc.Command(self.sock)
+        self.command = irc.Command(self.sock, self)
         r, w = os.pipe()
         self.buffer_r_last = ''
         self.buffer_r = r
         self.buffer_w = w
         self.skynet = skynet
         self.channels = []
+        self.callbacks = {}
         # Config
         self.config_path = os.path.abspath(os.path.expanduser(config_path))
         self.config = None
@@ -45,6 +47,18 @@ class Bot(object):
             return getattr(self, name)
         except:
             return getattr(self.skynet, name)
+
+    def add_callback(self, op, cb):
+        try:
+            self.callbacks[op].append(cb)
+        except KeyError:
+            self.callbacks[op] = [cb]
+
+    def pop_callback(self, op):
+        try:
+            return self.callbacks[op].pop()
+        except:
+            pass
 
     def reload(self, _init=False):
         errors = False
@@ -105,16 +119,22 @@ class Bot(object):
     def handle_line(self):
         all = os.read(self.buffer_r, 4096)
         lines = all.split('\r\n')
-
         lines[0] = self.buffer_r_last + lines[0]
         if not lines[-1]:
             self.buffer_r_last = lines[-1]
             lines = lines[:-1]
         else:
             self.buffer_r_last = ''
-
         for line in lines:
-            self.parse_ping(line) or self.parse_other(line)
+            logging.debug(line)
+            self.parse(line)
+
+    def parse(self, line):
+        if self.parse_ping(line):
+            return
+        if self.parse_topic(line):
+            return
+        self.parse_other(line)
 
     def parse_ping(self, line):
         x = line.split(' ')
@@ -122,6 +142,27 @@ class Bot(object):
             self.command.pong(' '.join(x[1:]))
             return True
         return False
+
+    PARSE_TOPIC_REGEX = re.compile(r'^:(\S+) ([0-9]+) \S+ (#\S+) :(.*)$')
+    def parse_topic(self, line):
+        m = self.PARSE_TOPIC_REGEX.match(line)
+        if not m:
+            return
+        sender = m.group(1)
+        command = m.group(2)
+        channel = m.group(3)
+        newtopic = m.group(4)
+        if sender.split('!')[0] == self.nick:
+            return True
+        if command == '332':
+            logging.debug('topic for %s is %s', channel, newtopic)
+            cb = self.pop_callback('TOPIC')
+            logging.debug('cb = %s', str(cb))
+            if cb:
+                logging.debug('Calling callback.')
+                cb(newtopic)
+            return True
+        # TODO error case.
 
     def wrapped(realself, info, nick):
         class Wrapper(object):
@@ -157,7 +198,6 @@ class Bot(object):
         return Wrapper()
 
     def parse_other(self, line):
-        logging.debug(line)
         all = line.split(':')
         if len(all) > 1:
             info = all[1].split()

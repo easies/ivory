@@ -16,3 +16,13 @@ def part(bot, input):
         bot.reply('Not authorized.')
     bot.command.part([])
 part.rule = r'^.part (#\S+)'
+
+
+def add_topic(bot, input):
+    if not bot.in_channel:
+        return
+    t = input.group(1).strip()
+    def cb(old):
+        bot.command.topic(bot.channel, ' | '.join([old, t]))
+    bot.command.topic(bot.channel, receiver=cb)
+add_topic.rule = r'^.topic-append (.+)$'
